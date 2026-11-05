@@ -7,4 +7,14 @@ export type PlayerProfile = {
 	coins: number,
 }
 
+export type Phase = "Intermission" | "Shift" | "Collapse"
+
+export type BlockKind = "Rock" | "Copper" | "Silver" | "Gold" | "Barrel"
+
+-- What one blast removed from the mine.
+export type CarveResult = {
+	gold: number,
+	barrels: { Vector3 },
+}
+
 return nil

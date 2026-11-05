@@ -1,27 +1,19 @@
 --!strict
 -- dynamite client entry point.
 
-local Controllers = script:FindFirstChild("Controllers")
+-- Listed by hand so startup order is fixed and every require is static.
+local CONTROLLERS: { any } = {
+	require(script.Controllers.Hud),
+	require(script.Controllers.Planting),
+	require(script.Controllers.BlastFeedback),
+}
 
-local loaded: { [string]: any } = {}
-if Controllers then
-	for _, child in Controllers:GetChildren() do
-		if child:IsA("ModuleScript") then
-			loaded[child.Name] = require(child :: any)
-		end
-	end
+for _, controller in CONTROLLERS do
+	controller.init()
 end
 
-for _, controller in loaded do
-	if typeof(controller.init) == "function" then
-		controller.init()
-	end
-end
-
-for _, controller in loaded do
-	if typeof(controller.start) == "function" then
-		task.spawn(controller.start)
-	end
+for _, controller in CONTROLLERS do
+	task.spawn(controller.start)
 end
 
 print("[dynamite] client started")
