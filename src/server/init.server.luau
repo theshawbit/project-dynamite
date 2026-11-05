@@ -2,27 +2,26 @@
 -- dynamite server entry point. Two-phase bootstrap: init() all systems,
 -- then start() all systems (see roblox-dev architecture guidance).
 
-local Systems = script:FindFirstChild("Systems")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local loaded: { [string]: any } = {}
-if Systems then
-	for _, child in Systems:GetChildren() do
-		if child:IsA("ModuleScript") then
-			loaded[child.Name] = require(child :: any)
-		end
-	end
+local Net = require(ReplicatedStorage.Shared.Net)
+
+-- Listed by hand so startup order is fixed and every require is static.
+local SYSTEMS: { any } = {
+	require(script.Systems.Miners),
+	require(script.Systems.Mine),
+	require(script.Systems.Dynamite),
+	require(script.Systems.Shift),
+}
+
+Net.setup()
+
+for _, system in SYSTEMS do
+	system.init()
 end
 
-for _, system in loaded do
-	if typeof(system.init) == "function" then
-		system.init()
-	end
-end
-
-for _, system in loaded do
-	if typeof(system.start) == "function" then
-		task.spawn(system.start)
-	end
+for _, system in SYSTEMS do
+	task.spawn(system.start)
 end
 
 print("[dynamite] server started")
