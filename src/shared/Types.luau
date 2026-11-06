@@ -4,7 +4,16 @@
 
 export type PlayerProfile = {
 	version: number,
-	coins: number,
+	gold: number,
+	upgrades: { [string]: number },
+}
+
+export type Upgrade = {
+	id: string,
+	name: string,
+	description: string,
+	maxLevel: number,
+	basePrice: number,
 }
 
 export type Phase = "Intermission" | "Shift" | "Collapse"

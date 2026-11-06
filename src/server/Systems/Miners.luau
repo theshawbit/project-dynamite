@@ -1,29 +1,48 @@
 --!strict
--- Owns each player's haul, bank and dynamite supply. The server tables here
--- are the truth; attributes and leaderstats only mirror them for display.
+-- Owns each player's haul, gold, upgrades and dynamite supply. Gold and
+-- upgrade levels live in the saved profile; attributes and leaderstats only
+-- mirror them for display. Until a profile loads, the player has no state and
+-- every function here does nothing.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Net = require(ReplicatedStorage.Shared.Net)
+local Types = require(ReplicatedStorage.Shared.Types)
+local UpgradeLogic = require(ReplicatedStorage.Shared.Util.UpgradeLogic)
+local Profiles = require(script.Parent.Profiles)
 
 type MinerState = {
+	data: Types.PlayerProfile,
 	carried: number,
-	banked: number,
 	sticks: number,
-	bankedStat: IntValue,
+	regenProgress: number,
+	goldStat: IntValue,
 }
 
 local states: { [Player]: MinerState } = {}
+local loading: { [Player]: boolean } = {}
 
 local Miners = {}
 
+local function levelIn(state: MinerState, id: string): number
+	return state.data.upgrades[id] or 0
+end
+
+local function maxSticksOf(state: MinerState): number
+	return UpgradeLogic.maxSticks(levelIn(state, "Pack"))
+end
+
 local function publish(player: Player, state: MinerState)
 	player:SetAttribute("Carried", state.carried)
-	player:SetAttribute("Banked", state.banked)
+	player:SetAttribute("Banked", state.data.gold)
 	player:SetAttribute("Sticks", state.sticks)
-	state.bankedStat.Value = state.banked
+	player:SetAttribute("MaxSticks", maxSticksOf(state))
+	for _, upgrade in Config.UPGRADES do
+		player:SetAttribute(`Level_{upgrade.id}`, levelIn(state, upgrade.id))
+	end
+	state.goldStat.Value = state.data.gold
 end
 
 function Miners.notify(player: Player, text: string)
@@ -57,9 +76,10 @@ function Miners.addCarried(player: Player, gold: number)
 	end
 end
 
-function Miners.dropHaul(player: Player, fraction: number)
+function Miners.dropHaul(player: Player)
 	local state = states[player]
 	if state and state.carried > 0 then
+		local fraction = UpgradeLogic.haulLoss(levelIn(state, "Boots"))
 		local lost = math.ceil(state.carried * fraction)
 		state.carried -= lost
 		publish(player, state)
@@ -87,27 +107,56 @@ function Miners.spendStick(player: Player): boolean
 	return true
 end
 
-function Miners.regenSticks()
+function Miners.regenSticks(deltaSeconds: number)
 	for player, state in states do
-		if state.sticks < Config.MAX_STICKS then
-			state.sticks += 1
-			publish(player, state)
+		if state.sticks >= maxSticksOf(state) then
+			state.regenProgress = 0
+		else
+			state.regenProgress += deltaSeconds
+			if state.regenProgress >= UpgradeLogic.regenSeconds(levelIn(state, "Resupply")) then
+				state.regenProgress = 0
+				state.sticks += 1
+				publish(player, state)
+			end
 		end
 	end
 end
 
--- A new shift: haul is wiped, the bank is kept, supply is refilled.
+function Miners.blastRadiusOf(player: Player): number
+	local state = states[player]
+	return UpgradeLogic.blastRadius(if state then levelIn(state, "BlastRadius") else 0)
+end
+
+-- Returns nil until the player's profile has loaded.
+function Miners.levelOf(player: Player, id: string): number?
+	local state = states[player]
+	return if state then levelIn(state, id) else nil
+end
+
+function Miners.purchase(player: Player, id: string, price: number): boolean
+	local state = states[player]
+	if not state or state.data.gold < price then
+		return false
+	end
+	state.data.gold -= price
+	state.data.upgrades[id] = levelIn(state, id) + 1
+	publish(player, state)
+	return true
+end
+
+-- A new shift: haul is wiped, gold is kept, supply is refilled.
 function Miners.resetForShift()
 	for player, state in states do
 		state.carried = 0
-		state.sticks = Config.MAX_STICKS
+		state.sticks = maxSticksOf(state)
+		state.regenProgress = 0
 		publish(player, state)
 	end
 end
 
 local function bank(player: Player, state: MinerState)
 	local amount = state.carried
-	state.banked += amount
+	state.data.gold += amount
 	state.carried = 0
 	publish(player, state)
 	Miners.notify(player, `Banked {amount} gold!`)
@@ -121,22 +170,30 @@ local function onCharacterAdded(player: Player, character: Model)
 end
 
 local function onPlayerAdded(player: Player)
-	if states[player] then
+	if loading[player] or states[player] then
+		return
+	end
+
+	loading[player] = true
+	local data = Profiles.load(player)
+	loading[player] = nil
+	if not data then
 		return
 	end
 
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
-	local bankedStat = Instance.new("IntValue")
-	bankedStat.Name = "Gold"
-	bankedStat.Parent = leaderstats
+	local goldStat = Instance.new("IntValue")
+	goldStat.Name = "Gold"
+	goldStat.Parent = leaderstats
 	leaderstats.Parent = player
 
 	local state: MinerState = {
+		data = data,
 		carried = 0,
-		banked = 0,
-		sticks = Config.MAX_STICKS,
-		bankedStat = bankedStat,
+		sticks = UpgradeLogic.maxSticks(data.upgrades.Pack or 0),
+		regenProgress = 0,
+		goldStat = goldStat,
 	}
 	states[player] = state
 	publish(player, state)
@@ -153,9 +210,10 @@ function Miners.init()
 	Players.PlayerAdded:Connect(onPlayerAdded)
 	Players.PlayerRemoving:Connect(function(player)
 		states[player] = nil
+		Profiles.release(player)
 	end)
 	for _, player in Players:GetPlayers() do
-		onPlayerAdded(player)
+		task.spawn(onPlayerAdded, player)
 	end
 end
 

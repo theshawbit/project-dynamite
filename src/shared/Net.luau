@@ -4,9 +4,9 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-export type RemoteName = "PlantDynamite" | "Blast" | "Notice"
+export type RemoteName = "PlantDynamite" | "BuyUpgrade" | "Blast" | "Notice"
 
-local NAMES: { RemoteName } = { "PlantDynamite", "Blast", "Notice" }
+local NAMES: { RemoteName } = { "PlantDynamite", "BuyUpgrade", "Blast", "Notice" }
 local FOLDER_NAME = "Remotes"
 
 local Net = {}

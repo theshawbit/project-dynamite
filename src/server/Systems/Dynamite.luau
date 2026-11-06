@@ -12,6 +12,7 @@ local Mine = require(script.Parent.Mine)
 local Miners = require(script.Parent.Miners)
 
 local MAX_COORDINATE = 10000
+local REGEN_TICK_SECONDS = 0.25
 
 local active: { [Player]: number } = {}
 local stickFolder: Folder
@@ -29,7 +30,7 @@ local function hurtPlayers(center: Vector3, radius: number)
 			if distance <= radius then
 				humanoid:TakeDamage(MineLogic.blastDamage(distance, radius))
 				if humanoid.Health > 0 then
-					Miners.dropHaul(player, Config.HIT_HAUL_LOSS)
+					Miners.dropHaul(player)
 				end
 			end
 		end
@@ -86,6 +87,7 @@ local function plant(player: Player, position: Vector3)
 	active[player] = (active[player] or 0) + 1
 	local stick = makeStick(position)
 	local fuseGeneration = generation
+	local radius = Miners.blastRadiusOf(player)
 
 	task.delay(Config.FUSE_SECONDS, function()
 		stick:Destroy()
@@ -95,7 +97,7 @@ local function plant(player: Player, position: Vector3)
 		if active[player] then
 			active[player] -= 1
 		end
-		detonate(player, position, Config.BLAST_RADIUS)
+		detonate(player, position, radius)
 	end)
 end
 
@@ -163,8 +165,7 @@ end
 
 function Dynamite.start()
 	while true do
-		task.wait(Config.STICK_REGEN_SECONDS)
-		Miners.regenSticks()
+		Miners.regenSticks(task.wait(REGEN_TICK_SECONDS))
 	end
 end
 

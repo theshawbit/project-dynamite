@@ -14,13 +14,19 @@ A push-your-luck mining game for Roblox, built with [Rojo](https://rojo.space).
 Getting hit by a blast costs you health and a quarter of your haul, and dying
 loses all of it. That includes your own dynamite.
 
+Banked gold buys permanent upgrades in the shop (press B).
+
 All the tuning values live in `src/shared/Config.luau`.
 
 ## Development
 
 1. Install the toolchain: `rokit install`
-2. Start syncing: `rojo serve`
-3. In Roblox Studio, connect with the Rojo plugin.
+2. Install packages: `wally install`
+3. Start syncing: `rojo serve`
+4. In Roblox Studio, connect with the Rojo plugin.
+
+Saving needs a published place with **Enable Studio Access to API Services** turned on
+in Game Settings. Without it the game still runs, but nothing is saved between sessions.
 
 ## Structure
 
