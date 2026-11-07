@@ -22,6 +22,34 @@ return table.freeze({
 	ENTRANCE_Z = ENTRANCE_Z,
 	STARTER_TUNNEL_DEPTH = 4,
 
+	-- Mine layouts. Every shift gets fresh hollow caverns and rich veins.
+	CAVERNS_MIN = 2,
+	CAVERNS_MAX = 4,
+	GOLD_VEINS = 2,
+	GOLD_VEIN_LENGTH_MIN = 4,
+	GOLD_VEIN_LENGTH_MAX = 7,
+	CRYSTAL_VEIN_CHANCE = 0.25,
+	CRYSTAL_VEIN_LENGTH_MIN = 3,
+	CRYSTAL_VEIN_LENGTH_MAX = 5,
+	-- Veins start somewhere past this share of the mine's depth.
+	VEIN_START_DEPTH = 0.45,
+
+	-- Gas pockets release a cloud that hurts anyone inside it. Blasting the
+	-- cloud ignites it.
+	GAS_CLOUD_RADIUS = 9,
+	GAS_CLOUD_SECONDS = 10,
+	GAS_DAMAGE_PER_SECOND = 12,
+	GAS_BLAST_RADIUS = 16,
+
+	-- Any blast inside the mine can bring the roof down nearby. The chance
+	-- grows towards the back of the mine.
+	CAVE_IN_CHANCE = 0.06,
+	CAVE_IN_CHANCE_PER_DEPTH = 0.14,
+	CAVE_IN_RADIUS = 8,
+	CAVE_IN_WARNING_SECONDS = 1.5,
+	CAVE_IN_DAMAGE = 35,
+	CAVE_IN_COOLDOWN_SECONDS = 6,
+
 	-- Crossing this line on the way out banks the haul.
 	BANK_Z = ENTRANCE_Z - BLOCK_SIZE,
 	BANK_CHECK_SECONDS = 0.25,
@@ -93,6 +121,8 @@ return table.freeze({
 		Copper = 5,
 		Silver = 15,
 		Gold = 50,
+		Crystal = 120,
 		Barrel = 0,
+		Gas = 0,
 	}),
 })

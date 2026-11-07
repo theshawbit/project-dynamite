@@ -1,12 +1,13 @@
 --!strict
--- Owns the mountain: builds the block grid, removes blocks in a blast, and
--- answers questions about where things are relative to the mine.
+-- Owns the mountain: builds the block grid from a shift's layout, removes
+-- blocks in a blast, refills them in a cave-in, and answers questions about
+-- where things are relative to the mine.
 
 local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
-local MineLogic = require(ReplicatedStorage.Shared.Util.MineLogic)
+local MineLayout = require(ReplicatedStorage.Shared.Util.MineLayout)
 local Types = require(ReplicatedStorage.Shared.Types)
 
 type Cell = { part: Part, kind: Types.BlockKind }
@@ -24,7 +25,10 @@ local LOOKS: { [Types.BlockKind]: { color: Color3, material: Enum.Material } } =
 	Copper = { color = Color3.fromRGB(214, 120, 62), material = Enum.Material.Metal },
 	Silver = { color = Color3.fromRGB(190, 215, 235), material = Enum.Material.Metal },
 	Gold = { color = Color3.fromRGB(255, 200, 40), material = Enum.Material.Neon },
+	Crystal = { color = Color3.fromRGB(110, 230, 255), material = Enum.Material.Neon },
 	Barrel = { color = Color3.fromRGB(200, 30, 30), material = Enum.Material.SmoothPlastic },
+	-- Close to rock on purpose: sharp eyes spot the olive tint.
+	Gas = { color = Color3.fromRGB(96, 104, 66), material = Enum.Material.Slate },
 }
 
 local cells: { [number]: Cell } = {}
@@ -34,9 +38,8 @@ local blockFolder: Folder
 
 local Mine = {}
 
-local function cellIndex(i: number, j: number, k: number): number
-	return i + j * WIDTH + k * WIDTH * HEIGHT
-end
+local cellIndex = MineLayout.index
+local inGrid = MineLayout.inGrid
 
 local function cellCenter(i: number, j: number, k: number): Vector3
 	return Vector3.new(
@@ -46,19 +49,10 @@ local function cellCenter(i: number, j: number, k: number): Vector3
 	)
 end
 
-local function inGrid(i: number, j: number, k: number): boolean
-	return i >= 0 and i < WIDTH and j >= 0 and j < HEIGHT and k >= 0 and k < DEPTH
-end
-
 local function toCell(position: Vector3): (number, number, number)
 	return math.floor((position.X + HALF_WIDTH) / SIZE),
 		math.floor((position.Y - Config.FLOOR_Y) / SIZE),
 		math.floor((position.Z - Config.ENTRANCE_Z) / SIZE)
-end
-
-local function isStarterTunnel(i: number, j: number, k: number): boolean
-	local centered = i == WIDTH / 2 - 1 or i == WIDTH / 2
-	return centered and j < 2 and k < Config.STARTER_TUNNEL_DEPTH
 end
 
 local function makeBlock(kind: Types.BlockKind, position: Vector3): Part
@@ -116,19 +110,19 @@ local function buildYard()
 	sign.Parent = bankLine
 end
 
-function Mine.rebuild()
+function Mine.rebuild(layout: Types.MineLayout)
 	blockFolder:ClearAllChildren()
 	table.clear(cells)
 
 	local built = 0
 	for k = 0, DEPTH - 1 do
-		local depth = k / (DEPTH - 1)
 		for j = 0, HEIGHT - 1 do
 			for i = 0, WIDTH - 1 do
-				if not isStarterTunnel(i, j, k) then
-					local kind = MineLogic.rollKind(depth, random:NextNumber())
+				local index = cellIndex(i, j, k)
+				local kind = layout.kinds[index]
+				if kind then
 					local part = makeBlock(kind, cellCenter(i, j, k))
-					cells[cellIndex(i, j, k)] = { part = part, kind = kind }
+					cells[index] = { part = part, kind = kind }
 
 					built += 1
 					if built % BLOCKS_PER_FRAME == 0 then
@@ -141,7 +135,7 @@ function Mine.rebuild()
 end
 
 function Mine.carve(center: Vector3, radius: number): Types.CarveResult
-	local result: Types.CarveResult = { gold = 0, barrels = {} }
+	local result: Types.CarveResult = { gold = 0, barrels = {}, gasPockets = {} }
 	local reach = math.ceil(radius / SIZE)
 	local ci, cj, ck = toCell(center)
 
@@ -154,6 +148,8 @@ function Mine.carve(center: Vector3, radius: number): Types.CarveResult
 					result.gold += Config.ORE_VALUE[cell.kind]
 					if cell.kind == "Barrel" then
 						table.insert(result.barrels, cell.part.Position)
+					elseif cell.kind == "Gas" then
+						table.insert(result.gasPockets, cell.part.Position)
 					end
 					cell.part:Destroy()
 					cells[index] = nil
@@ -163,6 +159,41 @@ function Mine.carve(center: Vector3, radius: number): Types.CarveResult
 	end
 
 	return result
+end
+
+-- Fills empty cells near a point with rock, as a cave-in. Cells holding a
+-- player or the entrance tunnel stay open, so nobody is sealed inside rock
+-- and the way in is never blocked. Returns how many cells were filled.
+function Mine.refill(center: Vector3, radius: number, keepClear: { Vector3 }): number
+	local filled = 0
+	local reach = math.ceil(radius / SIZE)
+	local ci, cj, ck = toCell(center)
+
+	for k = math.max(ck - reach, Config.STARTER_TUNNEL_DEPTH), ck + reach do
+		for j = cj - reach, cj + reach do
+			for i = ci - reach, ci + reach do
+				local index = cellIndex(i, j, k)
+				local position = cellCenter(i, j, k)
+				local open = inGrid(i, j, k)
+					and not cells[index]
+					and (position - center).Magnitude <= radius
+				if open then
+					for _, spot in keepClear do
+						if (position - spot).Magnitude <= SIZE then
+							open = false
+							break
+						end
+					end
+				end
+				if open then
+					cells[index] = { part = makeBlock("Rock", position), kind = "Rock" }
+					filled += 1
+				end
+			end
+		end
+	end
+
+	return filled
 end
 
 -- True when the position sits on the surface of a block that still exists.
@@ -198,14 +229,32 @@ function Mine.backZ(): number
 	return BACK_Z
 end
 
--- Falling rock at the collapse front. Purely visual.
+-- 0 at the entrance, 1 at the back wall.
+function Mine.depthOf(position: Vector3): number
+	return math.clamp((position.Z - Config.ENTRANCE_Z) / (DEPTH * SIZE), 0, 1)
+end
+
+function Mine.ceilingY(): number
+	return Config.FLOOR_Y + HEIGHT * SIZE
+end
+
+-- Falling rock spread across the mine's width at one depth. Purely visual.
 function Mine.dropRocks(z: number, count: number)
-	local top = Config.FLOOR_Y + HEIGHT * SIZE
+	Mine.dropRocksAround(Vector3.new(0, 0, z), HALF_WIDTH, 0, count)
+end
+
+-- Falling rock scattered around a point. Purely visual.
+function Mine.dropRocksAround(center: Vector3, spreadX: number, spreadZ: number, count: number)
+	local top = Mine.ceilingY()
 	for _ = 1, count do
 		local rock = Instance.new("Part")
 		rock.Name = "FallingRock"
 		rock.Size = Vector3.one * random:NextNumber(3, 6)
-		rock.Position = Vector3.new(random:NextNumber(-HALF_WIDTH, HALF_WIDTH), top + 4, z)
+		rock.Position = Vector3.new(
+			math.clamp(center.X + random:NextNumber(-spreadX, spreadX), -HALF_WIDTH, HALF_WIDTH),
+			top + 4,
+			center.Z + random:NextNumber(-spreadZ, spreadZ)
+		)
 		rock.Color = LOOKS.Rock.color
 		rock.Material = LOOKS.Rock.material
 		rock.CanTouch = false

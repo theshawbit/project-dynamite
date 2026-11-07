@@ -18,7 +18,7 @@ export type Upgrade = {
 
 export type Phase = "Intermission" | "Shift" | "Collapse"
 
-export type BlockKind = "Rock" | "Copper" | "Silver" | "Gold" | "Barrel"
+export type BlockKind = "Rock" | "Copper" | "Silver" | "Gold" | "Crystal" | "Barrel" | "Gas"
 
 export type TutorialStep = "Plant" | "StandBack" | "Bank" | "EarnMore" | "Buy" | "Escape"
 
@@ -37,6 +37,13 @@ export type TutorialState = {
 export type CarveResult = {
 	gold: number,
 	barrels: { Vector3 },
+	gasPockets: { Vector3 },
+}
+
+-- One shift's mine plan, keyed by grid cell index. A missing cell is empty.
+export type MineLayout = {
+	kinds: { [number]: BlockKind },
+	hasCrystal: boolean,
 }
 
 return nil
