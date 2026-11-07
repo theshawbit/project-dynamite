@@ -20,6 +20,19 @@ export type Phase = "Intermission" | "Shift" | "Collapse"
 
 export type BlockKind = "Rock" | "Copper" | "Silver" | "Gold" | "Barrel"
 
+export type TutorialStep = "Plant" | "StandBack" | "Bank" | "EarnMore" | "Buy" | "Escape"
+
+-- What the first-shift guide needs to know about a player.
+export type TutorialState = {
+	phase: string?,
+	carried: number,
+	banked: number,
+	sticks: number,
+	maxSticks: number,
+	upgraded: boolean,
+	cheapestUpgrade: number,
+}
+
 -- What one blast removed from the mine.
 export type CarveResult = {
 	gold: number,

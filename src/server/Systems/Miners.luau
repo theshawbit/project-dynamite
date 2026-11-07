@@ -18,6 +18,8 @@ type MinerState = {
 	carried: number,
 	sticks: number,
 	regenProgress: number,
+	shiftBanked: number,
+	shiftLost: number,
 	goldStat: IntValue,
 }
 
@@ -82,6 +84,7 @@ function Miners.dropHaul(player: Player)
 		local fraction = UpgradeLogic.haulLoss(levelIn(state, "Boots"))
 		local lost = math.ceil(state.carried * fraction)
 		state.carried -= lost
+		state.shiftLost += lost
 		publish(player, state)
 		Miners.notify(player, `Blast hit! Dropped {lost} gold`)
 	end
@@ -92,6 +95,7 @@ function Miners.loseHaul(player: Player, reason: string)
 	if state and state.carried > 0 then
 		local lost = state.carried
 		state.carried = 0
+		state.shiftLost += lost
 		publish(player, state)
 		Miners.notify(player, `{reason} Lost {lost} gold`)
 	end
@@ -144,9 +148,17 @@ function Miners.purchase(player: Player, id: string, price: number): boolean
 	return true
 end
 
--- A new shift: haul is wiped, gold is kept, supply is refilled.
+-- A new shift: last shift is reported, haul is wiped, gold is kept and supply
+-- is refilled. Haul still unbanked at this point counts as lost.
 function Miners.resetForShift()
 	for player, state in states do
+		local lost = state.shiftLost + state.carried
+		if state.shiftBanked > 0 or lost > 0 then
+			Net.get("ShiftSummary"):FireClient(player, state.shiftBanked, lost)
+		end
+
+		state.shiftBanked = 0
+		state.shiftLost = 0
 		state.carried = 0
 		state.sticks = maxSticksOf(state)
 		state.regenProgress = 0
@@ -157,6 +169,7 @@ end
 local function bank(player: Player, state: MinerState)
 	local amount = state.carried
 	state.data.gold += amount
+	state.shiftBanked += amount
 	state.carried = 0
 	publish(player, state)
 	Miners.notify(player, `Banked {amount} gold!`)
@@ -193,6 +206,8 @@ local function onPlayerAdded(player: Player)
 		carried = 0,
 		sticks = UpgradeLogic.maxSticks(data.upgrades.Pack or 0),
 		regenProgress = 0,
+		shiftBanked = 0,
+		shiftLost = 0,
 		goldStat = goldStat,
 	}
 	states[player] = state
