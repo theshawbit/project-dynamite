@@ -77,6 +77,16 @@ return table.freeze({
 		},
 	}),
 
+	-- Audio from Roblox's licensed APM and Pro Sound Effects libraries.
+	SOUNDS = table.freeze({
+		Fuse = table.freeze({ id = 1843927436, volume = 1.5 }),
+		Blast = table.freeze({ id = 9114224800, volume = 0.8 }),
+		Coin = table.freeze({ id = 9113849011, volume = 0.5 }),
+		Bank = table.freeze({ id = 9113728042, volume = 0.6 }),
+		Upgrade = table.freeze({ id = 9126073001, volume = 0.5 }),
+		Rumble = table.freeze({ id = 9112775181, volume = 0.8 }),
+	}),
+
 	-- Gold per ore block.
 	ORE_VALUE = table.freeze({
 		Rock = 0,

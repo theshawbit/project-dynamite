@@ -15,6 +15,9 @@ local DANGER = Color3.fromRGB(255, 80, 60)
 local PANEL = Color3.fromRGB(28, 24, 22)
 local WHITE = Color3.fromRGB(245, 240, 232)
 local NOTICE_SECONDS = 2.5
+local STAT_TEXT_SIZE = 20
+local POP_TEXT_SIZE = 26
+local POP_INFO = TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, true)
 
 local HEADLINES = {
 	Intermission = "NEXT SHIFT",
@@ -31,6 +34,7 @@ local sticksLabel: TextLabel
 local noticeLabel: TextLabel
 local hintLabel: TextLabel
 local noticeToken = 0
+local shownGold: { [TextLabel]: number } = {}
 
 local Hud = {}
 
@@ -62,13 +66,24 @@ local function makePanel(parent: Instance, size: UDim2, position: UDim2, anchor:
 	return panel
 end
 
+local function showGold(label: TextLabel, name: string, value: number)
+	label.Text = `{name}  {value}`
+
+	local previous = shownGold[label]
+	shownGold[label] = value
+	if previous and value > previous then
+		label.TextSize = STAT_TEXT_SIZE
+		TweenService:Create(label, POP_INFO, { TextSize = POP_TEXT_SIZE }):Play()
+	end
+end
+
 local function refreshStats()
 	local carried = localPlayer:GetAttribute("Carried") or 0
 	local banked = localPlayer:GetAttribute("Banked") or 0
 	local sticks = localPlayer:GetAttribute("Sticks") or 0
 	local maxSticks = localPlayer:GetAttribute("MaxSticks") or Config.MAX_STICKS
-	haulLabel.Text = `Haul  {carried}`
-	bankLabel.Text = `Banked  {banked}`
+	showGold(haulLabel, "Haul", carried)
+	showGold(bankLabel, "Banked", banked)
 	sticksLabel.Text = `Dynamite  {sticks}/{maxSticks}`
 end
 
@@ -132,9 +147,9 @@ function Hud.init()
 	layout.Padding = UDim.new(0, 2)
 	layout.Parent = stats
 
-	haulLabel = makeLabel(stats, UDim2.new(1, 0, 0, 26), 20, AMBER)
-	bankLabel = makeLabel(stats, UDim2.new(1, 0, 0, 26), 20, WHITE)
-	sticksLabel = makeLabel(stats, UDim2.new(1, 0, 0, 26), 20, WHITE)
+	haulLabel = makeLabel(stats, UDim2.new(1, 0, 0, 26), STAT_TEXT_SIZE, AMBER)
+	bankLabel = makeLabel(stats, UDim2.new(1, 0, 0, 26), STAT_TEXT_SIZE, WHITE)
+	sticksLabel = makeLabel(stats, UDim2.new(1, 0, 0, 26), STAT_TEXT_SIZE, WHITE)
 	for _, label in { haulLabel, bankLabel, sticksLabel } do
 		label.TextXAlignment = Enum.TextXAlignment.Left
 	end
