@@ -13,6 +13,7 @@ local SYSTEMS: { any } = {
 	require(script.Systems.Hazards),
 	require(script.Systems.Dynamite),
 	require(script.Systems.Shop),
+	require(script.Systems.Skins),
 	require(script.Systems.Leaderboard),
 	require(script.Systems.Shift),
 }

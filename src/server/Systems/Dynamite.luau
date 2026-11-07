@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local MineLogic = require(ReplicatedStorage.Shared.Util.MineLogic)
 local Net = require(ReplicatedStorage.Shared.Net)
+local Types = require(ReplicatedStorage.Shared.Types)
 local RateLimit = require(script.Parent.Parent.RateLimit)
 local Hazards = require(script.Parent.Hazards)
 local Mine = require(script.Parent.Mine)
@@ -19,6 +20,8 @@ local active: { [Player]: number } = {}
 local stickFolder: Folder
 -- Bumped on every reset so fuses and chains from the last shift do nothing.
 local generation = 0
+-- Each planted stick starts a new blast chain with its own id.
+local lastBlastId = 0
 
 local Dynamite = {}
 
@@ -38,8 +41,9 @@ local function hurtPlayers(center: Vector3, radius: number)
 	end
 end
 
-local function detonate(owner: Player, center: Vector3, radius: number)
-	local result = Mine.carve(center, radius)
+local function detonate(owner: Player, center: Vector3, radius: number, blastId: number)
+	local skin = Miners.skinOf(owner)
+	local result = Mine.carve(center, radius, blastId)
 	Miners.addCarried(owner, result.gold)
 
 	local explosion = Instance.new("Explosion")
@@ -50,14 +54,14 @@ local function detonate(owner: Player, center: Vector3, radius: number)
 	explosion.ExplosionType = Enum.ExplosionType.NoCraters
 	explosion.Parent = workspace
 
-	Net.get("Blast"):FireAllClients(center, radius)
+	Net.get("Blast"):FireAllClients(center, radius, skin.id)
 	hurtPlayers(center, radius)
 
 	local chainGeneration = generation
 	local function chain(position: Vector3, chainRadius: number)
 		task.delay(Config.CHAIN_DELAY_SECONDS, function()
 			if chainGeneration == generation then
-				detonate(owner, position, chainRadius)
+				detonate(owner, position, chainRadius, blastId)
 			end
 		end)
 	end
@@ -75,7 +79,7 @@ local function detonate(owner: Player, center: Vector3, radius: number)
 	Hazards.afterBlast(center, result)
 end
 
-local function makeStick(position: Vector3): Part
+local function makeStick(position: Vector3, skin: Types.Skin): Part
 	local stick = Instance.new("Part")
 	stick.Name = "Stick"
 	stick.Shape = Enum.PartType.Cylinder
@@ -85,11 +89,11 @@ local function makeStick(position: Vector3): Part
 	stick.CanCollide = false
 	stick.CanTouch = false
 	stick.CanQuery = false
-	stick.Color = Color3.fromRGB(190, 30, 30)
-	stick.Material = Enum.Material.SmoothPlastic
+	stick.Color = skin.stick
+	stick.Material = skin.material
 
 	local sparks = Instance.new("Sparkles")
-	sparks.SparkleColor = Color3.fromRGB(255, 170, 40)
+	sparks.SparkleColor = skin.spark
 	sparks.Parent = stick
 
 	stick.Parent = stickFolder
@@ -98,7 +102,7 @@ end
 
 local function plant(player: Player, position: Vector3)
 	active[player] = (active[player] or 0) + 1
-	local stick = makeStick(position)
+	local stick = makeStick(position, Miners.skinOf(player))
 	local fuseGeneration = generation
 	local radius = Miners.blastRadiusOf(player)
 
@@ -110,7 +114,8 @@ local function plant(player: Player, position: Vector3)
 		if active[player] then
 			active[player] -= 1
 		end
-		detonate(player, position, radius)
+		lastBlastId += 1
+		detonate(player, position, radius, lastBlastId)
 	end)
 end
 

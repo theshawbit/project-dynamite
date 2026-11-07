@@ -10,7 +10,9 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local MineLayout = require(ReplicatedStorage.Shared.Util.MineLayout)
 local Types = require(ReplicatedStorage.Shared.Types)
 
-type Cell = { part: Part, kind: Types.BlockKind }
+-- Hard rock survives its first blast as cracked rock. crackedBy holds the
+-- id of the blast chain that cracked it.
+type Cell = { part: Part, kind: Types.BlockKind, crackedBy: number? }
 
 local SIZE = Config.BLOCK_SIZE
 local WIDTH = Config.MINE_WIDTH
@@ -29,7 +31,11 @@ local LOOKS: { [Types.BlockKind]: { color: Color3, material: Enum.Material } } =
 	Barrel = { color = Color3.fromRGB(200, 30, 30), material = Enum.Material.SmoothPlastic },
 	-- Close to rock on purpose: sharp eyes spot the olive tint.
 	Gas = { color = Color3.fromRGB(96, 104, 66), material = Enum.Material.Slate },
+	Hardrock = { color = Color3.fromRGB(52, 46, 50), material = Enum.Material.Basalt },
 }
+
+local CRACKED_COLOR = Color3.fromRGB(190, 85, 40)
+local CRACKED_MATERIAL = Enum.Material.CrackedLava
 
 local cells: { [number]: Cell } = {}
 local random = Random.new()
@@ -134,7 +140,9 @@ function Mine.rebuild(layout: Types.MineLayout)
 	end
 end
 
-function Mine.carve(center: Vector3, radius: number): Types.CarveResult
+-- blastId is shared by a stick and every barrel or gas blast it sets off, so
+-- one chain can crack hard rock but only a later blast can break it.
+function Mine.carve(center: Vector3, radius: number, blastId: number): Types.CarveResult
 	local result: Types.CarveResult = { gold = 0, barrels = {}, gasPockets = {} }
 	local reach = math.ceil(radius / SIZE)
 	local ci, cj, ck = toCell(center)
@@ -144,7 +152,17 @@ function Mine.carve(center: Vector3, radius: number): Types.CarveResult
 			for i = ci - reach, ci + reach do
 				local index = cellIndex(i, j, k)
 				local cell = if inGrid(i, j, k) then cells[index] else nil
-				if cell and (cellCenter(i, j, k) - center).Magnitude <= radius then
+				local inBlast = cell and (cellCenter(i, j, k) - center).Magnitude <= radius
+				local holds = cell
+					and cell.kind == "Hardrock"
+					and (cell.crackedBy == nil or cell.crackedBy == blastId)
+				if cell and inBlast and holds then
+					if not cell.crackedBy then
+						cell.crackedBy = blastId
+						cell.part.Color = CRACKED_COLOR
+						cell.part.Material = CRACKED_MATERIAL
+					end
+				elseif cell and inBlast then
 					result.gold += Config.ORE_VALUE[cell.kind]
 					if cell.kind == "Barrel" then
 						table.insert(result.barrels, cell.part.Position)

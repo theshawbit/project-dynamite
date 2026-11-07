@@ -81,11 +81,17 @@ function MineLayout.generate(seed: number): Types.MineLayout
 
 	for k = 0, DEPTH - 1 do
 		local depth = k / (DEPTH - 1)
+		local deep = depth >= Config.DEEP_ZONE_START
 		for j = 0, HEIGHT - 1 do
 			for i = 0, WIDTH - 1 do
 				if not MineLayout.isStarterTunnel(i, j, k) then
-					kinds[MineLayout.index(i, j, k)] =
-						MineLogic.rollKind(depth, random:NextNumber())
+					local kind = MineLogic.rollKind(depth, random:NextNumber())
+					if deep and kind == "Rock" then
+						kind = if random:NextNumber() < Config.DEEP_CRYSTAL_CHANCE
+							then "Crystal"
+							else "Hardrock"
+					end
+					kinds[MineLayout.index(i, j, k)] = kind
 				end
 			end
 		end

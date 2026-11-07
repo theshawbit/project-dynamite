@@ -11,6 +11,7 @@ local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Net = require(ReplicatedStorage.Shared.Net)
+local SkinLogic = require(ReplicatedStorage.Shared.Util.SkinLogic)
 
 type SoundSpec = { id: number, volume: number }
 
@@ -20,7 +21,6 @@ local CHIP_TEXTURE = "rbxasset://textures/particles/SquareParticle.png"
 
 local DUST = Color3.fromRGB(150, 130, 110)
 local ROCK = Color3.fromRGB(90, 78, 68)
-local SPARK = Color3.fromRGB(255, 170, 40)
 
 -- Long enough for the blast sound to finish before its part is removed.
 local BLAST_PART_SECONDS = 10
@@ -73,7 +73,7 @@ local function makeBurst(parent: Instance, texture: string, color: Color3): Part
 	return emitter
 end
 
-local function playBlast(center: Vector3, radius: number)
+local function playBlast(center: Vector3, radius: number, sparkColor: Color3)
 	local part = makeEffectPart(Vector3.one)
 	part.Position = center
 	part.Parent = workspace
@@ -85,7 +85,7 @@ local function playBlast(center: Vector3, radius: number)
 	smoke.Speed = NumberRange.new(8, 20)
 	smoke.Drag = 3
 
-	local sparks = makeBurst(part, SPARK_TEXTURE, SPARK)
+	local sparks = makeBurst(part, SPARK_TEXTURE, sparkColor)
 	sparks.Size = NumberSequence.new(0.7, 0)
 	sparks.LightEmission = 1
 	sparks.Lifetime = NumberRange.new(0.3, 0.6)
@@ -111,9 +111,10 @@ local function playBlast(center: Vector3, radius: number)
 	Debris:AddItem(part, BLAST_PART_SECONDS)
 end
 
-local function onBlast(center: unknown, radius: unknown)
+-- The skin id only picks a spark colour; unknown ids fall back to the default.
+local function onBlast(center: unknown, radius: unknown, skinId: unknown)
 	if typeof(center) == "Vector3" and typeof(radius) == "number" then
-		playBlast(center, radius)
+		playBlast(center, radius, SkinLogic.resolve(skinId).spark)
 	end
 end
 
