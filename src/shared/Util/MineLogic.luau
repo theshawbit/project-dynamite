@@ -12,6 +12,7 @@ function MineLogic.rollKind(depth: number, roll: number): Types.BlockKind
 	local silver = gold + depth * 0.09
 	local copper = silver + 0.08
 	local barrel = copper + 0.015 + depth * 0.02
+	local gas = barrel + 0.008 + depth * 0.02
 
 	if roll < gold then
 		return "Gold"
@@ -21,6 +22,8 @@ function MineLogic.rollKind(depth: number, roll: number): Types.BlockKind
 		return "Copper"
 	elseif roll < barrel then
 		return "Barrel"
+	elseif roll < gas then
+		return "Gas"
 	end
 	return "Rock"
 end

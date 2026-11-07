@@ -10,6 +10,7 @@ local Net = require(ReplicatedStorage.Shared.Net)
 local SYSTEMS: { any } = {
 	require(script.Systems.Miners),
 	require(script.Systems.Mine),
+	require(script.Systems.Hazards),
 	require(script.Systems.Dynamite),
 	require(script.Systems.Shop),
 	require(script.Systems.Shift),

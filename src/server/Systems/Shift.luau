@@ -7,12 +7,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Types = require(ReplicatedStorage.Shared.Types)
+local MineLayout = require(ReplicatedStorage.Shared.Util.MineLayout)
 local Dynamite = require(script.Parent.Dynamite)
+local Hazards = require(script.Parent.Hazards)
 local Mine = require(script.Parent.Mine)
 local Miners = require(script.Parent.Miners)
 
 local COLLAPSE_TICK_SECONDS = 0.4
 local ROCKS_PER_TICK = 5
+local MAX_SEED = 2 ^ 31 - 1
+
+local random = Random.new()
 
 local Shift = {}
 
@@ -67,11 +72,19 @@ function Shift.start()
 
 		local intermissionEnds = setPhase("Intermission", Config.INTERMISSION_SECONDS)
 		Dynamite.reset()
+		Hazards.reset()
 		Miners.resetForShift()
-		Mine.rebuild()
+		local layout = MineLayout.generate(random:NextInteger(1, MAX_SEED))
+		Mine.rebuild(layout)
 		waitUntil(intermissionEnds)
 
-		waitUntil(setPhase("Shift", Config.SHIFT_SECONDS))
+		local shiftEnds = setPhase("Shift", Config.SHIFT_SECONDS)
+		if layout.hasCrystal then
+			for _, player in Players:GetPlayers() do
+				Miners.notify(player, "A crystal vein runs deep in this mine!")
+			end
+		end
+		waitUntil(shiftEnds)
 		runCollapse()
 	end
 end

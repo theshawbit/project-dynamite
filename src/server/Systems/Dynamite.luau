@@ -1,5 +1,5 @@
 --!strict
--- Planting, fuses, blasts and barrel chain reactions.
+-- Planting, fuses, blasts and chain reactions from barrels and gas.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -8,6 +8,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local MineLogic = require(ReplicatedStorage.Shared.Util.MineLogic)
 local Net = require(ReplicatedStorage.Shared.Net)
 local RateLimit = require(script.Parent.Parent.RateLimit)
+local Hazards = require(script.Parent.Hazards)
 local Mine = require(script.Parent.Mine)
 local Miners = require(script.Parent.Miners)
 
@@ -53,13 +54,25 @@ local function detonate(owner: Player, center: Vector3, radius: number)
 	hurtPlayers(center, radius)
 
 	local chainGeneration = generation
-	for _, barrel in result.barrels do
+	local function chain(position: Vector3, chainRadius: number)
 		task.delay(Config.CHAIN_DELAY_SECONDS, function()
 			if chainGeneration == generation then
-				detonate(owner, barrel, Config.BARREL_BLAST_RADIUS)
+				detonate(owner, position, chainRadius)
 			end
 		end)
 	end
+
+	for _, barrel in result.barrels do
+		chain(barrel, Config.BARREL_BLAST_RADIUS)
+	end
+	-- Checked before this blast's own gas is released, so a freshly opened
+	-- pocket lingers as a cloud instead of going off at once.
+	local cloud = Hazards.takeCloudAt(center)
+	if cloud then
+		chain(cloud, Config.GAS_BLAST_RADIUS)
+	end
+
+	Hazards.afterBlast(center, result)
 end
 
 local function makeStick(position: Vector3): Part
