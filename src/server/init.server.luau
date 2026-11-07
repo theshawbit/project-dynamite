@@ -8,8 +8,10 @@ local Net = require(ReplicatedStorage.Shared.Net)
 
 -- Listed by hand so startup order is fixed and every require is static.
 local SYSTEMS: { any } = {
+	require(script.Systems.Review),
 	require(script.Systems.Miners),
 	require(script.Systems.Mine),
+	require(script.Systems.Guard),
 	require(script.Systems.Hazards),
 	require(script.Systems.Dynamite),
 	require(script.Systems.Shop),
