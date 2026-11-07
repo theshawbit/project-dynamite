@@ -227,7 +227,7 @@ function ShopUI.init()
 	local openButton = Instance.new("TextButton")
 	openButton.Size = UDim2.fromOffset(120, 40)
 	openButton.AnchorPoint = Vector2.new(0, 1)
-	openButton.Position = UDim2.new(0, 12, 1, -116)
+	openButton.Position = UDim2.new(0, 12, 1, -140)
 	openButton.BackgroundColor3 = AMBER
 	openButton.BorderSizePixel = 0
 	openButton.Font = Enum.Font.GothamBold

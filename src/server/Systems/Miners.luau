@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Net = require(ReplicatedStorage.Shared.Net)
+local RankLogic = require(ReplicatedStorage.Shared.Util.RankLogic)
 local Types = require(ReplicatedStorage.Shared.Types)
 local UpgradeLogic = require(ReplicatedStorage.Shared.Util.UpgradeLogic)
 local Profiles = require(script.Parent.Profiles)
@@ -21,7 +22,12 @@ type MinerState = {
 	shiftBanked: number,
 	shiftLost: number,
 	goldStat: IntValue,
+	rankStat: StringValue,
 }
+
+local INK = Color3.fromRGB(28, 24, 22)
+local TAG_NAME = "RankTag"
+local TAG_RANGE = 60
 
 local states: { [Player]: MinerState } = {}
 local loading: { [Player]: boolean } = {}
@@ -36,15 +42,53 @@ local function maxSticksOf(state: MinerState): number
 	return UpgradeLogic.maxSticks(levelIn(state, "Pack"))
 end
 
+-- The rank name above a miner's head, so everyone can see who the veterans are.
+local function refreshTag(player: Player, state: MinerState)
+	local character = player.Character
+	local head = character and character:FindFirstChild("Head")
+	if not head then
+		return
+	end
+
+	local tag = head:FindFirstChild(TAG_NAME)
+	local label: TextLabel
+	if tag then
+		label = (tag :: BillboardGui):FindFirstChildOfClass("TextLabel") :: TextLabel
+	else
+		local billboard = Instance.new("BillboardGui")
+		billboard.Name = TAG_NAME
+		billboard.Size = UDim2.fromOffset(160, 24)
+		billboard.StudsOffset = Vector3.new(0, 2.2, 0)
+		billboard.MaxDistance = TAG_RANGE
+		label = Instance.new("TextLabel")
+		label.Size = UDim2.fromScale(1, 1)
+		label.BackgroundTransparency = 1
+		label.Font = Enum.Font.GothamBold
+		label.TextSize = 16
+		label.TextStrokeColor3 = INK
+		label.TextStrokeTransparency = 0.3
+		label.Parent = billboard
+		billboard.Parent = head
+	end
+
+	local rank = RankLogic.get(RankLogic.index(state.data.lifetimeGold))
+	label.Text = rank.name
+	label.TextColor3 = rank.color
+end
+
 local function publish(player: Player, state: MinerState)
+	local rankIndex = RankLogic.index(state.data.lifetimeGold)
 	player:SetAttribute("Carried", state.carried)
 	player:SetAttribute("Banked", state.data.gold)
+	player:SetAttribute("Lifetime", state.data.lifetimeGold)
+	player:SetAttribute("Rank", rankIndex)
 	player:SetAttribute("Sticks", state.sticks)
 	player:SetAttribute("MaxSticks", maxSticksOf(state))
 	for _, upgrade in Config.UPGRADES do
 		player:SetAttribute(`Level_{upgrade.id}`, levelIn(state, upgrade.id))
 	end
 	state.goldStat.Value = state.data.gold
+	state.rankStat.Value = RankLogic.get(rankIndex).name
 end
 
 function Miners.notify(player: Player, text: string)
@@ -70,10 +114,11 @@ function Miners.humanoidOf(player: Player): Humanoid?
 	return nil
 end
 
+-- Lucky Strike is applied here, so every source of ore pays the bonus.
 function Miners.addCarried(player: Player, gold: number)
 	local state = states[player]
 	if state and gold > 0 then
-		state.carried += gold
+		state.carried += math.floor(gold * UpgradeLogic.oreBonus(levelIn(state, "Luck")))
 		publish(player, state)
 	end
 end
@@ -126,6 +171,12 @@ function Miners.regenSticks(deltaSeconds: number)
 	end
 end
 
+-- Gas and cave-in damage after the player's Hard Hat.
+function Miners.hazardDamage(player: Player, damage: number): number
+	local state = states[player]
+	return damage * UpgradeLogic.hazardDamageScale(if state then levelIn(state, "HardHat") else 0)
+end
+
 function Miners.blastRadiusOf(player: Player): number
 	local state = states[player]
 	return UpgradeLogic.blastRadius(if state then levelIn(state, "BlastRadius") else 0)
@@ -168,11 +219,20 @@ end
 
 local function bank(player: Player, state: MinerState)
 	local amount = state.carried
+	local rankBefore = RankLogic.index(state.data.lifetimeGold)
 	state.data.gold += amount
+	state.data.lifetimeGold += amount
 	state.shiftBanked += amount
 	state.carried = 0
 	publish(player, state)
-	Miners.notify(player, `Banked {amount} gold!`)
+
+	local rankAfter = RankLogic.index(state.data.lifetimeGold)
+	if rankAfter > rankBefore then
+		refreshTag(player, state)
+		Miners.notify(player, `Banked {amount} gold! Promoted to {RankLogic.get(rankAfter).name}!`)
+	else
+		Miners.notify(player, `Banked {amount} gold!`)
+	end
 end
 
 local function onCharacterAdded(player: Player, character: Model)
@@ -180,6 +240,11 @@ local function onCharacterAdded(player: Player, character: Model)
 	humanoid.Died:Connect(function()
 		Miners.loseHaul(player, "You died!")
 	end)
+
+	local state = states[player]
+	if state and character:WaitForChild("Head", 5) then
+		refreshTag(player, state)
+	end
 end
 
 local function onPlayerAdded(player: Player)
@@ -199,6 +264,9 @@ local function onPlayerAdded(player: Player)
 	local goldStat = Instance.new("IntValue")
 	goldStat.Name = "Gold"
 	goldStat.Parent = leaderstats
+	local rankStat = Instance.new("StringValue")
+	rankStat.Name = "Rank"
+	rankStat.Parent = leaderstats
 	leaderstats.Parent = player
 
 	local state: MinerState = {
@@ -209,6 +277,7 @@ local function onPlayerAdded(player: Player)
 		shiftBanked = 0,
 		shiftLost = 0,
 		goldStat = goldStat,
+		rankStat = rankStat,
 	}
 	states[player] = state
 	publish(player, state)

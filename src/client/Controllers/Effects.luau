@@ -199,6 +199,7 @@ function Effects.init()
 
 	playOnIncrease("Carried", coinSound)
 	playOnIncrease("Banked", bankSound)
+	playOnIncrease("Rank", upgradeSound)
 	for _, upgrade in Config.UPGRADES do
 		playOnIncrease(`Level_{upgrade.id}`, upgradeSound)
 	end
