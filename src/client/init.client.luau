@@ -7,6 +7,7 @@ local CONTROLLERS: { any } = {
 	require(script.Controllers.Planting),
 	require(script.Controllers.ShopUI),
 	require(script.Controllers.BlastFeedback),
+	require(script.Controllers.Effects),
 }
 
 for _, controller in CONTROLLERS do
