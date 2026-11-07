@@ -111,7 +111,7 @@ local function collapseRoof(center: Vector3)
 	end
 
 	forPlayersNear(center, Config.CAVE_IN_RADIUS, function(player, _, humanoid)
-		humanoid:TakeDamage(Config.CAVE_IN_DAMAGE)
+		humanoid:TakeDamage(Miners.hazardDamage(player, Config.CAVE_IN_DAMAGE))
 		if humanoid.Health > 0 then
 			Miners.dropHaul(player)
 		end
@@ -224,8 +224,10 @@ function Hazards.start()
 				cloud.part:Destroy()
 				table.remove(clouds, index)
 			else
-				forPlayersNear(cloud.center, Config.GAS_CLOUD_RADIUS, function(_, _, humanoid)
-					humanoid:TakeDamage(Config.GAS_DAMAGE_PER_SECOND * deltaTime)
+				forPlayersNear(cloud.center, Config.GAS_CLOUD_RADIUS, function(player, _, humanoid)
+					humanoid:TakeDamage(
+						Miners.hazardDamage(player, Config.GAS_DAMAGE_PER_SECOND * deltaTime)
+					)
 				end)
 			end
 		end

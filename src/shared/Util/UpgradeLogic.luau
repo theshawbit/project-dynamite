@@ -37,4 +37,21 @@ function UpgradeLogic.haulLoss(level: number): number
 	return Config.HIT_HAUL_LOSS - level * Config.HAUL_LOSS_PER_LEVEL
 end
 
+function UpgradeLogic.oreBonus(level: number): number
+	return 1 + level * Config.ORE_BONUS_PER_LEVEL
+end
+
+function UpgradeLogic.hazardDamageScale(level: number): number
+	return 1 - level * Config.HAZARD_DAMAGE_CUT_PER_LEVEL
+end
+
+-- Total gold paid for the first `level` levels of an upgrade.
+function UpgradeLogic.spentOn(upgrade: Types.Upgrade, level: number): number
+	local total = 0
+	for paid = 0, math.min(level, upgrade.maxLevel) - 1 do
+		total += UpgradeLogic.price(upgrade, paid)
+	end
+	return total
+end
+
 return UpgradeLogic

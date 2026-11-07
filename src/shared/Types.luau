@@ -5,7 +5,15 @@
 export type PlayerProfile = {
 	version: number,
 	gold: number,
+	-- Every coin ever banked, including gold since spent. Ranks come from this.
+	lifetimeGold: number,
 	upgrades: { [string]: number },
+}
+
+export type Rank = {
+	name: string,
+	lifetime: number,
+	color: Color3,
 }
 
 export type Upgrade = {

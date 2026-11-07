@@ -74,6 +74,8 @@ return table.freeze({
 	BLAST_RADIUS_PER_LEVEL = 1.5,
 	REGEN_SECONDS_PER_LEVEL = 0.4,
 	HAUL_LOSS_PER_LEVEL = 0.04,
+	ORE_BONUS_PER_LEVEL = 0.1,
+	HAZARD_DAMAGE_CUT_PER_LEVEL = 0.12,
 	UPGRADES = table.freeze({
 		{
 			id = "BlastRadius",
@@ -103,7 +105,40 @@ return table.freeze({
 			maxLevel = 5,
 			basePrice = 60,
 		},
+		{
+			id = "Luck",
+			name = "Lucky Strike",
+			description = "Every ore pays 10% more per level",
+			maxLevel = 5,
+			basePrice = 120,
+		},
+		{
+			id = "HardHat",
+			name = "Hard Hat",
+			description = "Gas and cave-ins hurt less",
+			maxLevel = 5,
+			basePrice = 90,
+		},
 	}),
+
+	-- Ranks are earned with lifetime gold: every coin ever banked, spent or not.
+	RANKS = table.freeze({
+		table.freeze({ name = "Greenhorn", lifetime = 0, color = Color3.fromRGB(200, 195, 185) }),
+		table.freeze({ name = "Digger", lifetime = 500, color = Color3.fromRGB(214, 120, 62) }),
+		table.freeze({ name = "Blaster", lifetime = 2000, color = Color3.fromRGB(235, 80, 60) }),
+		table.freeze({ name = "Foreman", lifetime = 6000, color = Color3.fromRGB(190, 215, 235) }),
+		table.freeze({
+			name = "Demolitionist",
+			lifetime = 15000,
+			color = Color3.fromRGB(255, 200, 40),
+		}),
+		table.freeze({ name = "Legend", lifetime = 40000, color = Color3.fromRGB(110, 230, 255) }),
+	}),
+
+	-- The Top Miners board in the yard, shared by every server.
+	LEADERBOARD_SIZE = 10,
+	LEADERBOARD_REFRESH_SECONDS = 60,
+	LEADERBOARD_POSITION = Vector3.new(-30, 7.2, ENTRANCE_Z - 2 * BLOCK_SIZE - 14),
 
 	-- Audio from Roblox's licensed APM and Pro Sound Effects libraries.
 	SOUNDS = table.freeze({

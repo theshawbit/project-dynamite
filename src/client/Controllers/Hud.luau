@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Net = require(ReplicatedStorage.Shared.Net)
+local RankLogic = require(ReplicatedStorage.Shared.Util.RankLogic)
 
 local AMBER = Color3.fromRGB(255, 200, 40)
 local DANGER = Color3.fromRGB(255, 80, 60)
@@ -31,6 +32,7 @@ local timerLabel: TextLabel
 local haulLabel: TextLabel
 local bankLabel: TextLabel
 local sticksLabel: TextLabel
+local rankLabel: TextLabel
 local noticeLabel: TextLabel
 local hintLabel: TextLabel
 local noticeToken = 0
@@ -85,6 +87,17 @@ local function refreshStats()
 	showGold(haulLabel, "Haul", carried)
 	showGold(bankLabel, "Banked", banked)
 	sticksLabel.Text = `Dynamite  {sticks}/{maxSticks}`
+
+	local lifetime = localPlayer:GetAttribute("Lifetime")
+	local rankIndex = localPlayer:GetAttribute("Rank")
+	if typeof(lifetime) == "number" and typeof(rankIndex) == "number" then
+		local rank = RankLogic.get(rankIndex)
+		local nextRank = RankLogic.nextAfter(rankIndex)
+		rankLabel.Text = if nextRank
+			then `{rank.name}  {lifetime}/{nextRank.lifetime}`
+			else rank.name
+		rankLabel.TextColor3 = rank.color
+	end
 end
 
 local function refreshPhase()
@@ -138,7 +151,7 @@ function Hud.init()
 	timerLabel.Position = UDim2.fromOffset(0, 32)
 
 	local stats =
-		makePanel(gui, UDim2.fromOffset(220, 96), UDim2.new(0, 12, 1, -12), Vector2.new(0, 1))
+		makePanel(gui, UDim2.fromOffset(250, 120), UDim2.new(0, 12, 1, -12), Vector2.new(0, 1))
 	local padding = Instance.new("UIPadding")
 	padding.PaddingLeft = UDim.new(0, 14)
 	padding.PaddingTop = UDim.new(0, 8)
@@ -150,7 +163,8 @@ function Hud.init()
 	haulLabel = makeLabel(stats, UDim2.new(1, 0, 0, 26), STAT_TEXT_SIZE, AMBER)
 	bankLabel = makeLabel(stats, UDim2.new(1, 0, 0, 26), STAT_TEXT_SIZE, WHITE)
 	sticksLabel = makeLabel(stats, UDim2.new(1, 0, 0, 26), STAT_TEXT_SIZE, WHITE)
-	for _, label in { haulLabel, bankLabel, sticksLabel } do
+	rankLabel = makeLabel(stats, UDim2.new(1, 0, 0, 22), 16, WHITE)
+	for _, label in { haulLabel, bankLabel, sticksLabel, rankLabel } do
 		label.TextXAlignment = Enum.TextXAlignment.Left
 	end
 
@@ -170,7 +184,7 @@ function Hud.init()
 	hintLabel.Text = "Click rock to plant dynamite. Ore gets richer the deeper you go.\n"
 		.. "Carry your haul back over the bank line before the mine collapses!"
 
-	for _, name in { "Carried", "Banked", "Sticks", "MaxSticks" } do
+	for _, name in { "Carried", "Banked", "Sticks", "MaxSticks", "Lifetime", "Rank" } do
 		localPlayer:GetAttributeChangedSignal(name):Connect(refreshStats)
 	end
 	workspace:GetAttributeChangedSignal("Phase"):Connect(refreshPhase)
