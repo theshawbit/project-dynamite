@@ -68,10 +68,16 @@ return table.freeze({
 	MAX_ACTIVE_STICKS = 3,
 	STICK_REGEN_SECONDS = 3,
 
-	-- Getting caught in a blast.
+	-- Getting caught in a blast. Only the miner whose dynamite it was gets
+	-- hurt; everyone else is just shoved, so nobody can grief another's haul.
 	DAMAGE_MIN = 15,
 	DAMAGE_MAX = 65,
 	HIT_HAUL_LOSS = 0.25,
+
+	-- Banking pays this much extra for each other miner who has banked this
+	-- shift, counting up to CREW_BONUS_MAX_MINERS of them.
+	CREW_BONUS_PER_MINER = 0.1,
+	CREW_BONUS_MAX_MINERS = 3,
 
 	-- Upgrades. Each level changes the base value above by this much.
 	UPGRADE_PRICE_GROWTH = 1.7,

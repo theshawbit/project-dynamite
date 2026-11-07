@@ -261,8 +261,20 @@ function Miners.resetForShift()
 	end
 end
 
+-- Other miners who have banked this shift, capped for the crew bonus.
+local function crewSize(player: Player): number
+	local crew = 0
+	for other, otherState in states do
+		if other ~= player and otherState.shiftBanked > 0 then
+			crew += 1
+		end
+	end
+	return math.min(crew, Config.CREW_BONUS_MAX_MINERS)
+end
+
 local function bank(player: Player, state: MinerState)
-	local amount = state.carried
+	local bonus = math.floor(state.carried * crewSize(player) * Config.CREW_BONUS_PER_MINER)
+	local amount = state.carried + bonus
 	local rankBefore = RankLogic.index(state.data.lifetimeGold)
 	state.data.gold += amount
 	state.data.lifetimeGold += amount
@@ -270,13 +282,15 @@ local function bank(player: Player, state: MinerState)
 	state.carried = 0
 	publish(player, state)
 
+	local message = if bonus > 0
+		then `Banked {amount} gold (+{bonus} crew bonus)!`
+		else `Banked {amount} gold!`
 	local rankAfter = RankLogic.index(state.data.lifetimeGold)
 	if rankAfter > rankBefore then
 		refreshTag(player, state)
-		Miners.notify(player, `Banked {amount} gold! Promoted to {RankLogic.get(rankAfter).name}!`)
-	else
-		Miners.notify(player, `Banked {amount} gold!`)
+		message ..= ` Promoted to {RankLogic.get(rankAfter).name}!`
 	end
+	Miners.notify(player, message)
 end
 
 local function onCharacterAdded(player: Player, character: Model)
