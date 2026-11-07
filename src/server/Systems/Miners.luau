@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Net = require(ReplicatedStorage.Shared.Net)
 local RankLogic = require(ReplicatedStorage.Shared.Util.RankLogic)
+local SkinLogic = require(ReplicatedStorage.Shared.Util.SkinLogic)
 local Types = require(ReplicatedStorage.Shared.Types)
 local UpgradeLogic = require(ReplicatedStorage.Shared.Util.UpgradeLogic)
 local Profiles = require(script.Parent.Profiles)
@@ -86,6 +87,10 @@ local function publish(player: Player, state: MinerState)
 	player:SetAttribute("MaxSticks", maxSticksOf(state))
 	for _, upgrade in Config.UPGRADES do
 		player:SetAttribute(`Level_{upgrade.id}`, levelIn(state, upgrade.id))
+	end
+	player:SetAttribute("Skin", SkinLogic.resolve(state.data.skin).id)
+	for _, skin in Config.SKINS do
+		player:SetAttribute(`Skin_{skin.id}`, SkinLogic.isOwned(skin, state.data.ownedSkins))
 	end
 	state.goldStat.Value = state.data.gold
 	state.rankStat.Value = RankLogic.get(rankIndex).name
@@ -197,6 +202,45 @@ function Miners.purchase(player: Player, id: string, price: number): boolean
 	state.data.upgrades[id] = levelIn(state, id) + 1
 	publish(player, state)
 	return true
+end
+
+-- The equipped skin, or the default if the player's rank no longer allows it.
+function Miners.skinOf(player: Player): Types.Skin
+	local state = states[player]
+	local skin = SkinLogic.resolve(state and state.data.skin)
+	if state and skin.rank > RankLogic.index(state.data.lifetimeGold) then
+		return SkinLogic.resolve(Config.DEFAULT_SKIN)
+	end
+	return skin
+end
+
+-- Equips a skin, buying it first if needed. Returns what happened so the
+-- caller can tell the player, or nil if nothing changed.
+function Miners.selectSkin(
+	player: Player,
+	skin: Types.Skin
+): ("Equipped" | "Bought" | "Locked" | "Poor")?
+	local state = states[player]
+	if not state or state.data.skin == skin.id then
+		return nil
+	end
+	if skin.rank > RankLogic.index(state.data.lifetimeGold) then
+		return "Locked"
+	end
+
+	local result: "Equipped" | "Bought" = "Equipped"
+	if not SkinLogic.isOwned(skin, state.data.ownedSkins) then
+		if state.data.gold < skin.price then
+			return "Poor"
+		end
+		state.data.gold -= skin.price
+		state.data.ownedSkins[skin.id] = true
+		result = "Bought"
+	end
+
+	state.data.skin = skin.id
+	publish(player, state)
+	return result
 end
 
 -- A new shift: last shift is reported, haul is wiped, gold is kept and supply

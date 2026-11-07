@@ -19,6 +19,8 @@ local TEMPLATE: Types.PlayerProfile = {
 	gold = 0,
 	lifetimeGold = 0,
 	upgrades = {},
+	skin = Config.DEFAULT_SKIN,
+	ownedSkins = {},
 }
 
 local store = ProfileStore.New("PlayerData", TEMPLATE)

@@ -8,6 +8,19 @@ export type PlayerProfile = {
 	-- Every coin ever banked, including gold since spent. Ranks come from this.
 	lifetimeGold: number,
 	upgrades: { [string]: number },
+	skin: string,
+	ownedSkins: { [string]: boolean },
+}
+
+export type Skin = {
+	id: string,
+	name: string,
+	description: string,
+	price: number,
+	rank: number,
+	stick: Color3,
+	spark: Color3,
+	material: Enum.Material,
 }
 
 export type Rank = {
@@ -26,7 +39,15 @@ export type Upgrade = {
 
 export type Phase = "Intermission" | "Shift" | "Collapse"
 
-export type BlockKind = "Rock" | "Copper" | "Silver" | "Gold" | "Crystal" | "Barrel" | "Gas"
+export type BlockKind =
+	"Rock"
+	| "Copper"
+	| "Silver"
+	| "Gold"
+	| "Crystal"
+	| "Barrel"
+	| "Gas"
+	| "Hardrock"
 
 export type TutorialStep = "Plant" | "StandBack" | "Bank" | "EarnMore" | "Buy" | "Escape"
 

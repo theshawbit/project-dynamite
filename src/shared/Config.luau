@@ -17,7 +17,7 @@ return table.freeze({
 	BLOCK_SIZE = BLOCK_SIZE,
 	MINE_WIDTH = 16,
 	MINE_HEIGHT = 4,
-	MINE_DEPTH = 24,
+	MINE_DEPTH = 32,
 	FLOOR_Y = 0.2,
 	ENTRANCE_Z = ENTRANCE_Z,
 	STARTER_TUNNEL_DEPTH = 4,
@@ -33,6 +33,10 @@ return table.freeze({
 	CRYSTAL_VEIN_LENGTH_MAX = 5,
 	-- Veins start somewhere past this share of the mine's depth.
 	VEIN_START_DEPTH = 0.45,
+	-- Past this share of the depth, plain rock is hard rock that takes two
+	-- blasts, and crystal turns up scattered through it.
+	DEEP_ZONE_START = 0.72,
+	DEEP_CRYSTAL_CHANCE = 0.015,
 
 	-- Gas pockets release a cloud that hurts anyone inside it. Blasting the
 	-- cloud ignites it.
@@ -135,6 +139,82 @@ return table.freeze({
 		table.freeze({ name = "Legend", lifetime = 40000, color = Color3.fromRGB(110, 230, 255) }),
 	}),
 
+	-- Dynamite skins change the stick and its blast sparks. They are bought
+	-- with gold; a rank above 1 must be reached before the skin can be chosen.
+	DEFAULT_SKIN = "Classic",
+	SKINS = table.freeze({
+		table.freeze({
+			id = "Classic",
+			name = "Classic Red",
+			description = "Standard issue",
+			price = 0,
+			rank = 1,
+			stick = Color3.fromRGB(190, 30, 30),
+			spark = Color3.fromRGB(255, 170, 40),
+			material = Enum.Material.SmoothPlastic,
+		}),
+		table.freeze({
+			id = "Copper",
+			name = "Copper Wire",
+			description = "Wrapped in shiny copper",
+			price = 2000,
+			rank = 1,
+			stick = Color3.fromRGB(214, 120, 62),
+			spark = Color3.fromRGB(255, 140, 60),
+			material = Enum.Material.Metal,
+		}),
+		table.freeze({
+			id = "Foreman",
+			name = "Foreman's Stripe",
+			description = "Hazard yellow, for Foremen and up",
+			price = 4000,
+			rank = 4,
+			stick = Color3.fromRGB(255, 200, 40),
+			spark = Color3.fromRGB(255, 255, 255),
+			material = Enum.Material.SmoothPlastic,
+		}),
+		table.freeze({
+			id = "Midnight",
+			name = "Midnight",
+			description = "Black casing, violet sparks",
+			price = 5000,
+			rank = 1,
+			stick = Color3.fromRGB(30, 28, 40),
+			spark = Color3.fromRGB(170, 90, 255),
+			material = Enum.Material.SmoothPlastic,
+		}),
+		table.freeze({
+			id = "GoldPlated",
+			name = "Gold Plated",
+			description = "Pure showing off",
+			price = 12000,
+			rank = 1,
+			stick = Color3.fromRGB(255, 200, 40),
+			spark = Color3.fromRGB(255, 230, 120),
+			material = Enum.Material.Neon,
+		}),
+		table.freeze({
+			id = "Crystal",
+			name = "Crystal Core",
+			description = "Cut from the deepest vein",
+			price = 25000,
+			rank = 1,
+			stick = Color3.fromRGB(110, 230, 255),
+			spark = Color3.fromRGB(180, 245, 255),
+			material = Enum.Material.Neon,
+		}),
+		table.freeze({
+			id = "Legend",
+			name = "Legend's Flame",
+			description = "Free, but only Legends may carry it",
+			price = 0,
+			rank = 6,
+			stick = Color3.fromRGB(255, 90, 30),
+			spark = Color3.fromRGB(255, 60, 20),
+			material = Enum.Material.Neon,
+		}),
+	}),
+
 	-- The Top Miners board in the yard, shared by every server.
 	LEADERBOARD_SIZE = 10,
 	LEADERBOARD_REFRESH_SECONDS = 60,
@@ -159,5 +239,6 @@ return table.freeze({
 		Crystal = 120,
 		Barrel = 0,
 		Gas = 0,
+		Hardrock = 0,
 	}),
 })

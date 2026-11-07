@@ -54,7 +54,10 @@ local function buildBoard()
 	local board = Instance.new("Part")
 	board.Name = "TopMinersBoard"
 	board.Size = BOARD_SIZE
-	board.CFrame = CFrame.lookAt(position, Vector3.new(0, position.Y, Config.BANK_Z))
+	-- Turn the board towards the spawn so new players see it straight on.
+	local spawn = workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+	local target = if spawn then spawn.Position else Vector3.new(0, 0, Config.BANK_Z)
+	board.CFrame = CFrame.lookAt(position, Vector3.new(target.X, position.Y, target.Z))
 	board.Anchored = true
 	board.CanTouch = false
 	board.Color = INK
@@ -80,10 +83,10 @@ local function buildBoard()
 	for index = 1, Config.LEADERBOARD_SIZE do
 		local top = (index - 1) * ROW_HEIGHT
 		local name =
-			makeText(list, UDim2.new(0.7, 0, 0, ROW_HEIGHT), UDim2.fromOffset(0, top), 18, WHITE)
+			makeText(list, UDim2.new(0.7, 0, 0, ROW_HEIGHT), UDim2.fromOffset(0, top), 22, WHITE)
 		name.TextXAlignment = Enum.TextXAlignment.Left
 		local gold =
-			makeText(list, UDim2.new(0.3, 0, 0, ROW_HEIGHT), UDim2.new(0.7, 0, 0, top), 18, AMBER)
+			makeText(list, UDim2.new(0.3, 0, 0, ROW_HEIGHT), UDim2.new(0.7, 0, 0, top), 22, AMBER)
 		gold.TextXAlignment = Enum.TextXAlignment.Right
 		rows[index] = { name = name, gold = gold }
 	end
