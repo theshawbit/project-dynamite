@@ -41,6 +41,8 @@ local cells: { [number]: Cell } = {}
 local random = Random.new()
 local mineFolder: Folder
 local blockFolder: Folder
+local sightParams = RaycastParams.new()
+sightParams.FilterType = Enum.RaycastFilterType.Include
 
 local Mine = {}
 
@@ -214,6 +216,25 @@ function Mine.refill(center: Vector3, radius: number, keepClear: { Vector3 }): n
 	return filled
 end
 
+-- True when the point is inside a block that still exists.
+function Mine.isSolidAt(position: Vector3): boolean
+	local i, j, k = toCell(position)
+	return inGrid(i, j, k) and cells[cellIndex(i, j, k)] ~= nil
+end
+
+-- True when nothing in the mine blocks the straight line from one point to a
+-- target on a block's surface. The ray may stop a little short of the target,
+-- since the target itself sits on the block it hits.
+function Mine.canSee(from: Vector3, target: Vector3): boolean
+	local offset = target - from
+	local distance = offset.Magnitude
+	if distance < 0.01 then
+		return true
+	end
+	local hit = workspace:Raycast(from, offset.Unit * (distance + 1), sightParams)
+	return hit == nil or (hit.Position - target).Magnitude <= Config.PLANT_SIGHT_TOLERANCE
+end
+
 -- True when the position sits on the surface of a block that still exists.
 function Mine.isOnBlock(position: Vector3): boolean
 	local ci, cj, ck = toCell(position)
@@ -288,6 +309,7 @@ function Mine.init()
 	blockFolder = Instance.new("Folder")
 	blockFolder.Name = "Blocks"
 	blockFolder.Parent = mineFolder
+	sightParams.FilterDescendantsInstances = { blockFolder }
 	buildYard()
 	mineFolder.Parent = workspace
 end

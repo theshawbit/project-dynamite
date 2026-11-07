@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Review = require(script.Parent.Review)
 
 local STORE_NAME = "LifetimeGold"
 local AMBER = Color3.fromRGB(255, 200, 40)
@@ -112,7 +113,13 @@ local function save(player: Player)
 	local lifetime = player:GetAttribute("Lifetime")
 	local userId = player.UserId
 	-- Studio's test players have negative ids and are kept off the board.
-	if not store or userId <= 0 or typeof(lifetime) ~= "number" or written[userId] == lifetime then
+	if
+		not store
+		or userId <= 0
+		or typeof(lifetime) ~= "number"
+		or written[userId] == lifetime
+		or Review.isHeld(player)
+	then
 		return
 	end
 

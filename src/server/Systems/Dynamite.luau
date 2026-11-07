@@ -10,10 +10,14 @@ local Net = require(ReplicatedStorage.Shared.Net)
 local Types = require(ReplicatedStorage.Shared.Types)
 local RateLimit = require(script.Parent.Parent.RateLimit)
 local Hazards = require(script.Parent.Hazards)
+local Guard = require(script.Parent.Guard)
 local Mine = require(script.Parent.Mine)
 local Miners = require(script.Parent.Miners)
 
 local MAX_COORDINATE = 10000
+-- Sight lines are tried from head height and from about where the camera
+-- sits, so a spot the player can see on screen is plantable.
+local SIGHT_HEIGHTS = { 1.5, 4.5 }
 local REGEN_TICK_SECONDS = 0.25
 
 local active: { [Player]: number } = {}
@@ -154,6 +158,19 @@ local function onPlantRequest(player: Player, position: unknown)
 		return
 	end
 	if not Mine.isWorkArea(root.Position) or not Mine.isOnBlock(position) then
+		return
+	end
+	if not Guard.check(player) then
+		return
+	end
+	local seen = false
+	for _, height in SIGHT_HEIGHTS do
+		if Mine.canSee(root.Position + Vector3.yAxis * height, position) then
+			seen = true
+			break
+		end
+	end
+	if not seen then
 		return
 	end
 	if (active[player] or 0) >= Config.MAX_ACTIVE_STICKS then

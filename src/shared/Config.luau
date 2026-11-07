@@ -78,6 +78,24 @@ return table.freeze({
 	-- shift, counting up to CREW_BONUS_MAX_MINERS of them.
 	CREW_BONUS_PER_MINER = 0.1,
 	CREW_BONUS_MAX_MINERS = 3,
+	-- Another miner only counts once they have banked this much this shift,
+	-- so alt accounts banking a coin each can't farm the bonus.
+	CREW_BONUS_MIN_BANKED = 50,
+
+	-- Anti-cheat. Movement faster than walk speed times the margin drains a
+	-- burst budget that refills over time; knockback fits inside it, a
+	-- teleport does not. Snapped-back miners can't bank or plant for a moment.
+	GUARD_CHECK_SECONDS = 0.25,
+	GUARD_SPEED_MARGIN = 1.3,
+	GUARD_BURST_STUDS = 60,
+	GUARD_BURST_REFILL = 15,
+	GUARD_BLOCK_SECONDS = 3,
+	GUARD_STRIKES_TO_REVIEW = 3,
+	-- Banking more than this in one shift puts a miner on the review list and
+	-- keeps them off the Top Miners board until the developer checks them.
+	SHIFT_GOLD_REVIEW_LIMIT = 20000,
+	-- How far from the clicked spot a sight line may stop and still count.
+	PLANT_SIGHT_TOLERANCE = 2.5,
 
 	-- Upgrades. Each level changes the base value above by this much.
 	UPGRADE_PRICE_GROWTH = 1.7,

@@ -13,7 +13,9 @@ local RankLogic = require(ReplicatedStorage.Shared.Util.RankLogic)
 local SkinLogic = require(ReplicatedStorage.Shared.Util.SkinLogic)
 local Types = require(ReplicatedStorage.Shared.Types)
 local UpgradeLogic = require(ReplicatedStorage.Shared.Util.UpgradeLogic)
+local Guard = require(script.Parent.Guard)
 local Profiles = require(script.Parent.Profiles)
+local Review = require(script.Parent.Review)
 
 type MinerState = {
 	data: Types.PlayerProfile,
@@ -265,7 +267,7 @@ end
 local function crewSize(player: Player): number
 	local crew = 0
 	for other, otherState in states do
-		if other ~= player and otherState.shiftBanked > 0 then
+		if other ~= player and otherState.shiftBanked >= Config.CREW_BONUS_MIN_BANKED then
 			crew += 1
 		end
 	end
@@ -278,9 +280,15 @@ local function bank(player: Player, state: MinerState)
 	local rankBefore = RankLogic.index(state.data.lifetimeGold)
 	state.data.gold += amount
 	state.data.lifetimeGold += amount
+	local bankedBefore = state.shiftBanked
 	state.shiftBanked += amount
 	state.carried = 0
 	publish(player, state)
+
+	local limit = Config.SHIFT_GOLD_REVIEW_LIMIT
+	if bankedBefore <= limit and state.shiftBanked > limit then
+		Review.flag(player, `banked over {limit} gold in one shift`, true)
+	end
 
 	local message = if bonus > 0
 		then `Banked {amount} gold (+{bonus} crew bonus)!`
@@ -364,7 +372,14 @@ function Miners.start()
 		task.wait(Config.BANK_CHECK_SECONDS)
 		for player, state in states do
 			local root = Miners.rootOf(player)
-			if state.carried > 0 and root and root.Position.Z < Config.BANK_Z then
+			-- Guard.check runs last so a teleport across the line is caught
+			-- before it can bank.
+			if
+				state.carried > 0
+				and root
+				and root.Position.Z < Config.BANK_Z
+				and Guard.check(player)
+			then
 				bank(player, state)
 			end
 		end
