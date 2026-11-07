@@ -25,18 +25,20 @@ local lastBlastId = 0
 
 local Dynamite = {}
 
-local function hurtPlayers(center: Vector3, radius: number)
-	for _, player in Players:GetPlayers() do
-		local root = Miners.rootOf(player)
-		local humanoid = Miners.humanoidOf(player)
-		if root and humanoid then
-			local distance = (root.Position - center).Magnitude
-			if distance <= radius then
-				humanoid:TakeDamage(MineLogic.blastDamage(distance, radius))
-				if humanoid.Health > 0 then
-					Miners.dropHaul(player)
-				end
-			end
+-- Only the owner is hurt. Other miners still feel the knockback on their own
+-- screens, but their health and haul are safe from someone else's dynamite.
+local function hurtOwner(owner: Player, center: Vector3, radius: number)
+	local root = Miners.rootOf(owner)
+	local humanoid = Miners.humanoidOf(owner)
+	if not root or not humanoid then
+		return
+	end
+
+	local distance = (root.Position - center).Magnitude
+	if distance <= radius then
+		humanoid:TakeDamage(MineLogic.blastDamage(distance, radius))
+		if humanoid.Health > 0 then
+			Miners.dropHaul(owner)
 		end
 	end
 end
@@ -55,7 +57,7 @@ local function detonate(owner: Player, center: Vector3, radius: number, blastId:
 	explosion.Parent = workspace
 
 	Net.get("Blast"):FireAllClients(center, radius, skin.id)
-	hurtPlayers(center, radius)
+	hurtOwner(owner, center, radius)
 
 	local chainGeneration = generation
 	local function chain(position: Vector3, chainRadius: number)
