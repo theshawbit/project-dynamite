@@ -7,13 +7,13 @@ local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Net = require(ReplicatedStorage.Shared.Net)
 local RankLogic = require(ReplicatedStorage.Shared.Util.RankLogic)
 local Types = require(ReplicatedStorage.Shared.Types)
 local UpgradeLogic = require(ReplicatedStorage.Shared.Util.UpgradeLogic)
+local ScaledRoot = require(script.Parent.Parent.Util.ScaledRoot)
 
 local AMBER = Color3.fromRGB(255, 200, 40)
 local CARD = Color3.fromRGB(46, 40, 36)
@@ -238,7 +238,7 @@ local function makeRow(parent: Instance, upgrade: Types.Upgrade, order: number)
 	table.insert(rows, { upgrade = upgrade, levelLabel = levelLabel, buyButton = buyButton })
 end
 
-local function buildPanel(gui: ScreenGui)
+local function buildPanel(gui: GuiObject)
 	panel = Instance.new("Frame")
 	panel.Size = UDim2.fromScale(0.9, 0.7)
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -324,25 +324,31 @@ function ShopUI.init()
 	gui.Name = "DynamiteShop"
 	gui.ResetOnSpawn = false
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local root = ScaledRoot.create(gui)
 
-	local touchOnly = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	local touchOnly = ScaledRoot.isTouchOnly()
 	local openButton = Instance.new("TextButton")
 	openButton.Size = UDim2.fromOffset(120, 40)
 	openButton.AnchorPoint = Vector2.new(0, 1)
 	openButton.Position = UDim2.new(0, 12, 1, -140)
+	-- On touch screens it sits under the stats panel, clear of the movement stick.
+	if touchOnly then
+		openButton.AnchorPoint = Vector2.zero
+		openButton.Position = UDim2.fromOffset(12, 136)
+	end
 	openButton.BackgroundColor3 = AMBER
 	openButton.BorderSizePixel = 0
 	openButton.Font = Enum.Font.GothamBold
 	openButton.Text = if touchOnly then "Shop" else "Shop (B)"
 	openButton.TextColor3 = INK
 	openButton.TextSize = 17
-	openButton.Parent = gui
+	openButton.Parent = root
 	round(openButton, 8)
 	openButton.Activated:Connect(function()
 		setOpen(not isOpen)
 	end)
 
-	buildPanel(gui)
+	buildPanel(root)
 
 	localPlayer:GetAttributeChangedSignal("Banked"):Connect(refresh)
 	localPlayer:GetAttributeChangedSignal("Rank"):Connect(refresh)

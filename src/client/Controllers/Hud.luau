@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Net = require(ReplicatedStorage.Shared.Net)
+local ScaledRoot = require(script.Parent.Parent.Util.ScaledRoot)
 local RankLogic = require(ReplicatedStorage.Shared.Util.RankLogic)
 
 local AMBER = Color3.fromRGB(255, 200, 40)
@@ -142,16 +143,22 @@ function Hud.init()
 	gui.Name = "DynamiteHud"
 	gui.ResetOnSpawn = false
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local root = ScaledRoot.create(gui)
 
 	local top =
-		makePanel(gui, UDim2.fromOffset(260, 72), UDim2.new(0.5, 0, 0, 8), Vector2.new(0.5, 0))
+		makePanel(root, UDim2.fromOffset(260, 72), UDim2.new(0.5, 0, 0, 8), Vector2.new(0.5, 0))
 	phaseLabel = makeLabel(top, UDim2.new(1, 0, 0, 28), 18, AMBER)
 	phaseLabel.Position = UDim2.fromOffset(0, 6)
 	timerLabel = makeLabel(top, UDim2.new(1, 0, 0, 34), 30, WHITE)
 	timerLabel.Position = UDim2.fromOffset(0, 32)
 
 	local stats =
-		makePanel(gui, UDim2.fromOffset(250, 120), UDim2.new(0, 12, 1, -12), Vector2.new(0, 1))
+		makePanel(root, UDim2.fromOffset(250, 120), UDim2.new(0, 12, 1, -12), Vector2.new(0, 1))
+	-- On touch screens the bottom-left corner belongs to the movement stick.
+	if ScaledRoot.isTouchOnly() then
+		stats.AnchorPoint = Vector2.zero
+		stats.Position = UDim2.fromOffset(12, 8)
+	end
 	local padding = Instance.new("UIPadding")
 	padding.PaddingLeft = UDim.new(0, 14)
 	padding.PaddingTop = UDim.new(0, 8)
@@ -168,20 +175,23 @@ function Hud.init()
 		label.TextXAlignment = Enum.TextXAlignment.Left
 	end
 
-	noticeLabel = makeLabel(gui, UDim2.new(1, -32, 0, 40), 26, WHITE)
+	noticeLabel = makeLabel(root, UDim2.new(1, -32, 0, 40), 26, WHITE)
 	noticeLabel.AnchorPoint = Vector2.new(0.5, 0)
 	noticeLabel.Position = UDim2.new(0.5, 0, 0, 96)
 	noticeLabel.TextStrokeColor3 = PANEL
 	noticeLabel.TextTransparency = 1
 	noticeLabel.TextStrokeTransparency = 1
 
-	hintLabel = makeLabel(gui, UDim2.new(1, -32, 0, 60), 20, WHITE)
+	hintLabel = makeLabel(root, UDim2.new(1, -32, 0, 60), 20, WHITE)
 	hintLabel.AnchorPoint = Vector2.new(0.5, 0)
 	hintLabel.Position = UDim2.new(0.5, 0, 0, 140)
 	hintLabel.TextWrapped = true
 	hintLabel.TextStrokeColor3 = PANEL
 	hintLabel.TextStrokeTransparency = 0.3
-	hintLabel.Text = "Click rock to plant dynamite. Ore gets richer the deeper you go.\n"
+	local plantHow = if ScaledRoot.isTouchOnly()
+		then "Aim at rock and tap Plant to place dynamite."
+		else "Click rock to plant dynamite."
+	hintLabel.Text = `{plantHow} Ore gets richer the deeper you go.\n`
 		.. "Carry your haul back over the bank line before the mine collapses!"
 
 	for _, name in { "Carried", "Banked", "Sticks", "MaxSticks", "Lifetime", "Rank" } do

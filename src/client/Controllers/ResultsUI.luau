@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Net = require(ReplicatedStorage.Shared.Net)
+local ScaledRoot = require(script.Parent.Parent.Util.ScaledRoot)
 
 local AMBER = Color3.fromRGB(255, 200, 40)
 local DANGER = Color3.fromRGB(255, 80, 60)
@@ -80,6 +81,7 @@ function ResultsUI.init()
 	gui.Name = "DynamiteResults"
 	gui.ResetOnSpawn = false
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local root = ScaledRoot.create(gui)
 
 	panel = Instance.new("Frame")
 	panel.Size = UDim2.fromOffset(300, 116)
@@ -88,7 +90,7 @@ function ResultsUI.init()
 	panel.BackgroundColor3 = INK
 	panel.BorderSizePixel = 0
 	panel.Visible = false
-	panel.Parent = gui
+	panel.Parent = root
 
 	local corner = Instance.new("UICorner")
 	corner.CornerRadius = UDim.new(0, 12)
