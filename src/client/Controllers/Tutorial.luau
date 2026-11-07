@@ -9,6 +9,7 @@ local UserInputService = game:GetService("UserInputService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local TutorialLogic = require(ReplicatedStorage.Shared.Util.TutorialLogic)
 local Types = require(ReplicatedStorage.Shared.Types)
+local ScaledRoot = require(script.Parent.Parent.Util.ScaledRoot)
 
 local AMBER = Color3.fromRGB(255, 200, 40)
 local INK = Color3.fromRGB(28, 24, 22)
@@ -84,6 +85,7 @@ function Tutorial.init()
 	gui.Name = "DynamiteTutorial"
 	gui.ResetOnSpawn = false
 	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+	local root = ScaledRoot.create(gui)
 
 	tipLabel = Instance.new("TextLabel")
 	tipLabel.Size = UDim2.new(1, -32, 0, 56)
@@ -97,7 +99,7 @@ function Tutorial.init()
 	tipLabel.TextStrokeTransparency = 0.3
 	tipLabel.TextWrapped = true
 	tipLabel.Visible = false
-	tipLabel.Parent = gui
+	tipLabel.Parent = root
 
 	for _, name in { "Carried", "Banked", "Sticks", "MaxSticks" } do
 		localPlayer:GetAttributeChangedSignal(name):Connect(refresh)

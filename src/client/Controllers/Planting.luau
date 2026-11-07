@@ -46,6 +46,32 @@ local function aimRay(camera: Camera): Ray
 	return camera:ViewportPointToRay(viewport.X / 2, viewport.Y / 2)
 end
 
+-- Touch players aim at the middle of the screen, so it gets a crosshair.
+local function makeCrosshair()
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "DynamiteCrosshair"
+	gui.IgnoreGuiInset = true
+	gui.ResetOnSpawn = false
+
+	local dot = Instance.new("Frame")
+	dot.Size = UDim2.fromOffset(8, 8)
+	dot.AnchorPoint = Vector2.new(0.5, 0.5)
+	dot.Position = UDim2.fromScale(0.5, 0.5)
+	dot.BackgroundColor3 = Color3.fromRGB(245, 240, 232)
+	dot.BorderSizePixel = 0
+	dot.Parent = gui
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(1, 0)
+	corner.Parent = dot
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(28, 24, 22)
+	stroke.Thickness = 2
+	stroke.Parent = dot
+
+	gui.Parent = localPlayer:WaitForChild("PlayerGui")
+end
+
 local function updateAim()
 	aimPosition = nil
 	marker.Transparency = 1
@@ -109,6 +135,10 @@ function Planting.init()
 		Enum.KeyCode.ButtonR2
 	)
 	ContextActionService:SetTitle(ACTION, "Plant")
+
+	if not UserInputService.MouseEnabled then
+		makeCrosshair()
+	end
 end
 
 function Planting.start()
