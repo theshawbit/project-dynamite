@@ -8,6 +8,9 @@ local CONTROLLERS: { any } = {
 	require(script.Controllers.ShopUI),
 	require(script.Controllers.BlastFeedback),
 	require(script.Controllers.Effects),
+	require(script.Controllers.Tutorial),
+	require(script.Controllers.BankMarker),
+	require(script.Controllers.ResultsUI),
 }
 
 for _, controller in CONTROLLERS do
