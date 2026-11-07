@@ -5,6 +5,7 @@
 local CONTROLLERS: { any } = {
 	require(script.Controllers.Hud),
 	require(script.Controllers.Planting),
+	require(script.Controllers.ShopUI),
 	require(script.Controllers.BlastFeedback),
 }
 

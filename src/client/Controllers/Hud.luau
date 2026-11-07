@@ -66,9 +66,10 @@ local function refreshStats()
 	local carried = localPlayer:GetAttribute("Carried") or 0
 	local banked = localPlayer:GetAttribute("Banked") or 0
 	local sticks = localPlayer:GetAttribute("Sticks") or 0
+	local maxSticks = localPlayer:GetAttribute("MaxSticks") or Config.MAX_STICKS
 	haulLabel.Text = `Haul  {carried}`
 	bankLabel.Text = `Banked  {banked}`
-	sticksLabel.Text = `Dynamite  {sticks}/{Config.MAX_STICKS}`
+	sticksLabel.Text = `Dynamite  {sticks}/{maxSticks}`
 end
 
 local function refreshPhase()
@@ -154,7 +155,7 @@ function Hud.init()
 	hintLabel.Text = "Click rock to plant dynamite. Ore gets richer the deeper you go.\n"
 		.. "Carry your haul back over the bank line before the mine collapses!"
 
-	for _, name in { "Carried", "Banked", "Sticks" } do
+	for _, name in { "Carried", "Banked", "Sticks", "MaxSticks" } do
 		localPlayer:GetAttributeChangedSignal(name):Connect(refreshStats)
 	end
 	workspace:GetAttributeChangedSignal("Phase"):Connect(refreshPhase)

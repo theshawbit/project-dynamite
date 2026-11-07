@@ -41,6 +41,42 @@ return table.freeze({
 	DAMAGE_MAX = 65,
 	HIT_HAUL_LOSS = 0.25,
 
+	-- Upgrades. Each level changes the base value above by this much.
+	UPGRADE_PRICE_GROWTH = 1.7,
+	BLAST_RADIUS_PER_LEVEL = 1.5,
+	REGEN_SECONDS_PER_LEVEL = 0.4,
+	HAUL_LOSS_PER_LEVEL = 0.04,
+	UPGRADES = table.freeze({
+		{
+			id = "BlastRadius",
+			name = "Bigger Blasts",
+			description = "Your dynamite reaches further",
+			maxLevel = 5,
+			basePrice = 100,
+		},
+		{
+			id = "Resupply",
+			name = "Quick Resupply",
+			description = "New sticks arrive sooner",
+			maxLevel = 5,
+			basePrice = 80,
+		},
+		{
+			id = "Pack",
+			name = "Bigger Pack",
+			description = "Carry one more stick per level",
+			maxLevel = 5,
+			basePrice = 60,
+		},
+		{
+			id = "Boots",
+			name = "Sturdy Boots",
+			description = "Drop less haul when a blast hits you",
+			maxLevel = 5,
+			basePrice = 60,
+		},
+	}),
+
 	-- Gold per ore block.
 	ORE_VALUE = table.freeze({
 		Rock = 0,
