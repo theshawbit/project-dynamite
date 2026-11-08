@@ -63,19 +63,25 @@ local function toCell(position: Vector3): (number, number, number)
 		math.floor((position.Z - Config.ENTRANCE_Z) / SIZE)
 end
 
-local function makeBlock(kind: Types.BlockKind, position: Vector3): Part
+-- Gives a block part its kind's look and puts it in place. Used for new
+-- parts and for parts reused from the last shift.
+local function styleBlock(part: Part, kind: Types.BlockKind, position: Vector3)
 	local look = LOOKS[kind]
-	local part = Instance.new("Part")
 	part.Name = kind
-	part.Size = Vector3.one * SIZE
 	part.Position = position
+	part.Color = look.color
+	part.Material = look.material
+end
+
+local function makeBlock(kind: Types.BlockKind, position: Vector3): Part
+	local part = Instance.new("Part")
+	part.Size = Vector3.one * SIZE
 	part.Anchored = true
 	part.CanTouch = false
 	part.CastShadow = false
-	part.Color = look.color
-	part.Material = look.material
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
+	styleBlock(part, kind, position)
 	part.Parent = blockFolder
 	return part
 end
@@ -118,8 +124,10 @@ local function buildYard()
 	sign.Parent = bankLine
 end
 
+-- Blocks left over from the last shift are moved and restyled rather than
+-- destroyed and recreated, so each new mine sends far less to every player.
 function Mine.rebuild(layout: Types.MineLayout)
-	blockFolder:ClearAllChildren()
+	local spare = blockFolder:GetChildren()
 	table.clear(cells)
 
 	local built = 0
@@ -129,7 +137,15 @@ function Mine.rebuild(layout: Types.MineLayout)
 				local index = cellIndex(i, j, k)
 				local kind = layout.kinds[index]
 				if kind then
-					local part = makeBlock(kind, cellCenter(i, j, k))
+					local position = cellCenter(i, j, k)
+					local reused = table.remove(spare)
+					local part: Part
+					if reused and reused:IsA("Part") then
+						part = reused
+						styleBlock(part, kind, position)
+					else
+						part = makeBlock(kind, position)
+					end
 					cells[index] = { part = part, kind = kind }
 
 					built += 1
@@ -139,6 +155,10 @@ function Mine.rebuild(layout: Types.MineLayout)
 				end
 			end
 		end
+	end
+
+	for _, leftover in spare do
+		leftover:Destroy()
 	end
 end
 
@@ -299,6 +319,9 @@ function Mine.dropRocksAround(center: Vector3, spreadX: number, spreadZ: number,
 		rock.CanTouch = false
 		rock.CanQuery = false
 		rock.Parent = mineFolder
+		-- The server owns the physics, so ownership doesn't hop between nearby
+		-- players while the rock falls.
+		rock:SetNetworkOwner(nil)
 		Debris:AddItem(rock, 2.5)
 	end
 end

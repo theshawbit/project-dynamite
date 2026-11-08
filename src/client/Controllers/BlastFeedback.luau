@@ -59,7 +59,7 @@ local function updateShake(deltaTime: number)
 end
 
 function BlastFeedback.init()
-	Net.get("Blast").OnClientEvent:Connect(onBlast)
+	Net.getUnreliable("Blast").OnClientEvent:Connect(onBlast)
 end
 
 function BlastFeedback.start()
