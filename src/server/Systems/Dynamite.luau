@@ -60,7 +60,7 @@ local function detonate(owner: Player, center: Vector3, radius: number, blastId:
 	explosion.ExplosionType = Enum.ExplosionType.NoCraters
 	explosion.Parent = workspace
 
-	Net.get("Blast"):FireAllClients(center, radius, skin.id)
+	Net.getUnreliable("Blast"):FireAllClients(center, radius, skin.id)
 	hurtOwner(owner, center, radius)
 
 	local chainGeneration = generation

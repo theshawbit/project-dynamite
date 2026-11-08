@@ -205,7 +205,7 @@ function Effects.init()
 		playOnIncrease(`Level_{upgrade.id}`, upgradeSound)
 	end
 
-	Net.get("Blast").OnClientEvent:Connect(onBlast)
+	Net.getUnreliable("Blast").OnClientEvent:Connect(onBlast)
 	workspace:GetAttributeChangedSignal("Phase"):Connect(refreshPhase)
 	refreshPhase()
 end
